@@ -11,6 +11,9 @@ const fontSizeSlider = document.getElementById('fontSizeSlider');
 const fontSizeValue = document.getElementById('fontSizeValue');
 const countdownOverlay = document.getElementById('countdownOverlay');
 const countdownNumber = document.getElementById('countdownNumber');
+const fullscreenBtn = document.getElementById('fullscreenBtn');
+const fullscreenIcon = document.getElementById('fullscreenIcon');
+const fullscreenText = document.getElementById('fullscreenText');
 
 // Variáveis de controle
 let isRunning = false;
@@ -186,6 +189,73 @@ document.addEventListener('keydown', (e) => {
 // Salva o texto no localStorage
 textInput.addEventListener('input', () => {
     localStorage.setItem('teleprompterText', textInput.value);
+});
+
+// Função para alternar tela cheia
+function toggleFullscreen() {
+    if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.mozFullScreenElement && !document.msFullscreenElement) {
+        // Entrar em tela cheia
+        if (prompterScreen.requestFullscreen) {
+            prompterScreen.requestFullscreen();
+        } else if (prompterScreen.webkitRequestFullscreen) {
+            prompterScreen.webkitRequestFullscreen();
+        } else if (prompterScreen.mozRequestFullScreen) {
+            prompterScreen.mozRequestFullScreen();
+        } else if (prompterScreen.msRequestFullscreen) {
+            prompterScreen.msRequestFullscreen();
+        } else {
+            // Fallback: usar modo tela cheia customizado
+            document.body.classList.add('fullscreen-mode');
+            fullscreenIcon.textContent = '⛶';
+            fullscreenText.textContent = 'Sair da Tela Cheia';
+        }
+    } else {
+        // Sair da tela cheia
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        } else if (document.mozCancelFullScreen) {
+            document.mozCancelFullScreen();
+        } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+        } else {
+            // Fallback: remover modo tela cheia customizado
+            document.body.classList.remove('fullscreen-mode');
+            fullscreenIcon.textContent = '⛶';
+            fullscreenText.textContent = 'Tela Cheia';
+        }
+    }
+}
+
+// Atualizar ícone quando entrar/sair do fullscreen
+document.addEventListener('fullscreenchange', updateFullscreenButton);
+document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
+document.addEventListener('mozfullscreenchange', updateFullscreenButton);
+document.addEventListener('MSFullscreenChange', updateFullscreenButton);
+
+function updateFullscreenButton() {
+    const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement || document.body.classList.contains('fullscreen-mode'));
+    
+    if (isFullscreen) {
+        fullscreenIcon.textContent = '⛶';
+        fullscreenText.textContent = 'Sair da Tela Cheia';
+    } else {
+        fullscreenIcon.textContent = '⛶';
+        fullscreenText.textContent = 'Tela Cheia';
+        document.body.classList.remove('fullscreen-mode');
+    }
+}
+
+// Event listener do botão de tela cheia
+fullscreenBtn.addEventListener('click', toggleFullscreen);
+
+// Atalho F11 para tela cheia
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'F11' && !e.target.matches('textarea')) {
+        e.preventDefault();
+        toggleFullscreen();
+    }
 });
 
 // Carrega o texto salvo ao carregar a página

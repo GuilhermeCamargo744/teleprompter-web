@@ -111,6 +111,29 @@ body {
     cursor: not-allowed;
 }
 
+.fullscreen-control {
+    margin-top: 10px;
+}
+
+.btn-fullscreen {
+    width: 100%;
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-fullscreen:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(72, 187, 120, 0.4);
+}
+
+#fullscreenIcon {
+    font-size: 20px;
+}
+
 .speed-control,
 .font-control {
     display: flex;
@@ -256,6 +279,36 @@ body {
         transform: scale(1);
         opacity: 1;
     }
+}
+
+/* Modo tela cheia */
+body.fullscreen-mode {
+    padding: 0;
+}
+
+body.fullscreen-mode .container {
+    max-width: 100%;
+    height: 100vh;
+    gap: 0;
+}
+
+body.fullscreen-mode .control-panel {
+    display: none;
+}
+
+body.fullscreen-mode .prompter-screen {
+    border-radius: 0;
+    flex: 1;
+    height: 100vh;
+}
+
+body.fullscreen-mode .prompter-screen::before,
+body.fullscreen-mode .prompter-screen::after {
+    border-radius: 0;
+}
+
+body.fullscreen-mode .countdown-overlay {
+    border-radius: 0;
 }
 
 /* Responsividade */
