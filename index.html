@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teleprompter</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="control-panel">
+            <h1>Teleprompter</h1>
+            
+            <div class="input-section">
+                <label for="textInput">Digite ou cole o texto:</label>
+                <textarea id="textInput" placeholder="Cole ou digite o texto que será exibido no teleprompter..."></textarea>
+            </div>
+
+            <div class="controls">
+                <button id="startBtn" class="btn btn-primary">Iniciar</button>
+                <button id="pauseBtn" class="btn btn-secondary" disabled>Pausar</button>
+                <button id="resetBtn" class="btn btn-secondary">Resetar</button>
+            </div>
+
+            <div class="speed-control">
+                <label for="speedSlider">Velocidade:</label>
+                <input type="range" id="speedSlider" min="1" max="10" value="5">
+                <span id="speedValue">5</span>
+            </div>
+
+            <div class="font-control">
+                <label for="fontSizeSlider">Tamanho da Fonte:</label>
+                <input type="range" id="fontSizeSlider" min="20" max="80" value="40">
+                <span id="fontSizeValue">40px</span>
+            </div>
+        </div>
+
+        <div class="prompter-screen" id="prompterScreen">
+            <div class="countdown-overlay" id="countdownOverlay">
+                <div class="countdown-number" id="countdownNumber"></div>
+            </div>
+            <div class="prompter-content" id="prompterContent">
+                <p>Digite ou cole o texto na área acima e clique em "Iniciar" para começar.</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
