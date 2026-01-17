@@ -45,65 +45,106 @@ function startCountdown() {
         return;
     }
 
-    // Para o scroll se estiver rodando e reseta a posição
+    // Para o scroll completamente se estiver rodando
     if (isRunning) {
         pauseScroll();
     }
     
-    // Reseta a posição de scroll
+    // Limpa qualquer intervalo ativo
+    if (scrollInterval) {
+        clearInterval(scrollInterval);
+        scrollInterval = null;
+    }
+    
+    // Garante que está parado
+    isRunning = false;
     scrollPosition = 0;
+    
+    // Remove o overlay do contador se estiver visível
     countdownOverlay.classList.remove('show');
     
     // Atualiza o conteúdo do teleprompter
     prompterContent.textContent = text;
     
-    // Garante que o scroll está no topo
+    // Garante que o scroll está no topo e parado
     requestAnimationFrame(() => {
         prompterScreen.scrollTop = 0;
-        setTimeout(() => {
+        scrollPosition = 0;
+        
+        // Aguarda um frame adicional para garantir no iPad
+        requestAnimationFrame(() => {
             prompterScreen.scrollTop = 0;
             scrollPosition = 0;
+            isRunning = false;
             
             // Desabilita o botão iniciar
-            startBtn.disabled = true;
+            if (startBtn) {
+                startBtn.disabled = true;
+            }
             
             // Mostra o overlay do contador
             countdownOverlay.classList.add('show');
             
-            // Inicia o contador regressivo
-            let count = 5;
-            countdownNumber.textContent = count;
-            
-            const countdownInterval = setInterval(() => {
-                count--;
+            // Pequeno delay para garantir que o overlay está visível no iPad
+            setTimeout(() => {
+                // Inicia o contador regressivo
+                let count = 5;
+                countdownNumber.textContent = count;
                 
-                if (count > 0) {
-                    countdownNumber.textContent = count;
-                } else {
-                    // Quando o contador chega a zero, esconde o overlay e inicia o scroll
-                    clearInterval(countdownInterval);
-                    countdownOverlay.classList.remove('show');
-                    startActualScroll();
-                }
-            }, 1000); // Atualiza a cada 1 segundo
-        }, 100);
+                const countdownInterval = setInterval(() => {
+                    count--;
+                    
+                    if (count > 0) {
+                        countdownNumber.textContent = count;
+                    } else {
+                        // Quando o contador chega a zero, esconde o overlay e inicia o scroll
+                        clearInterval(countdownInterval);
+                        countdownOverlay.classList.remove('show');
+                        
+                        // Pequeno delay antes de iniciar o scroll para garantir que o overlay foi removido
+                        setTimeout(() => {
+                            startActualScroll();
+                        }, 200);
+                    }
+                }, 1000); // Atualiza a cada 1 segundo
+            }, 100);
+        });
     });
 }
 
 // Função para iniciar o scroll (chamada após o contador)
 function startActualScroll() {
+    // Garante que não há intervalos rodando
+    if (scrollInterval) {
+        clearInterval(scrollInterval);
+        scrollInterval = null;
+    }
+    
+    // Garante que está parado antes de iniciar
+    isRunning = false;
+    scrollPosition = 0;
+    
     // Usa requestAnimationFrame para garantir que o scroll seja aplicado após o conteúdo ser renderizado
     requestAnimationFrame(() => {
         prompterScreen.scrollTop = 0;
+        scrollPosition = 0;
         
-        // Pequeno delay para garantir que o scroll está no topo
+        // Pequeno delay para garantir que o scroll está no topo (especialmente no iPad)
         setTimeout(() => {
             prompterScreen.scrollTop = 0;
             scrollPosition = 0;
             
+            // Garante novamente que não há intervalos rodando
+            if (scrollInterval) {
+                clearInterval(scrollInterval);
+                scrollInterval = null;
+            }
+            
             // Inicia o scroll automático
             isRunning = true;
-            pauseBtn.disabled = false;
+            if (pauseBtn) {
+                pauseBtn.disabled = false;
+            }
             
             scrollInterval = setInterval(() => {
                 scrollPosition += currentSpeed;
@@ -114,7 +155,7 @@ function startActualScroll() {
                     pauseScroll();
                 }
             }, 50); // Atualiza a cada 50ms para scroll suave
-        }, 100);
+        }, 150); // Aumentado para 150ms para dar mais tempo no iPad
     });
 }
 
@@ -221,19 +262,39 @@ function startAfterFullscreen() {
     const text = textInput.value.trim();
     
     if (text) {
-        // Para o scroll se estiver rodando
+        // Para o scroll completamente se estiver rodando
         if (isRunning) {
             pauseScroll();
+        }
+        
+        // Limpa qualquer intervalo que possa estar rodando
+        if (scrollInterval) {
+            clearInterval(scrollInterval);
+            scrollInterval = null;
         }
         
         // Reseta o scroll primeiro, mas mantém o texto
         resetScroll(true);
         
-        // Aguarda um pouco para garantir que a tela cheia foi aplicada
+        // Garante que o scroll está parado e no topo
+        scrollPosition = 0;
+        prompterScreen.scrollTop = 0;
+        isRunning = false;
+        
+        // Aguarda mais tempo no iPad/iOS para garantir que a tela cheia foi aplicada completamente
         setTimeout(() => {
+            // Garante novamente que está parado
+            if (scrollInterval) {
+                clearInterval(scrollInterval);
+                scrollInterval = null;
+            }
+            scrollPosition = 0;
+            prompterScreen.scrollTop = 0;
+            isRunning = false;
+            
             // Inicia o contador regressivo e depois o scroll
             startCountdown();
-        }, 300);
+        }, 500); // Aumentado para 500ms para dar mais tempo no iPad
     }
 }
 
