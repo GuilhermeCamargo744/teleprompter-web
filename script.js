@@ -45,35 +45,49 @@ function startCountdown() {
         return;
     }
 
-    // Atualiza o conteúdo do teleprompter
-    prompterContent.textContent = text;
+    // Para o scroll se estiver rodando e reseta a posição
+    if (isRunning) {
+        pauseScroll();
+    }
     
     // Reseta a posição de scroll
     scrollPosition = 0;
-    prompterScreen.scrollTop = 0;
+    countdownOverlay.classList.remove('show');
     
-    // Desabilita o botão iniciar
-    startBtn.disabled = true;
+    // Atualiza o conteúdo do teleprompter
+    prompterContent.textContent = text;
     
-    // Mostra o overlay do contador
-    countdownOverlay.classList.add('show');
-    
-    // Inicia o contador regressivo
-    let count = 3;
-    countdownNumber.textContent = count;
-    
-    const countdownInterval = setInterval(() => {
-        count--;
-        
-        if (count > 0) {
+    // Garante que o scroll está no topo
+    requestAnimationFrame(() => {
+        prompterScreen.scrollTop = 0;
+        setTimeout(() => {
+            prompterScreen.scrollTop = 0;
+            scrollPosition = 0;
+            
+            // Desabilita o botão iniciar
+            startBtn.disabled = true;
+            
+            // Mostra o overlay do contador
+            countdownOverlay.classList.add('show');
+            
+            // Inicia o contador regressivo
+            let count = 5;
             countdownNumber.textContent = count;
-        } else {
-            // Quando o contador chega a zero, esconde o overlay e inicia o scroll
-            clearInterval(countdownInterval);
-            countdownOverlay.classList.remove('show');
-            startActualScroll();
-        }
-    }, 1000); // Atualiza a cada 1 segundo
+            
+            const countdownInterval = setInterval(() => {
+                count--;
+                
+                if (count > 0) {
+                    countdownNumber.textContent = count;
+                } else {
+                    // Quando o contador chega a zero, esconde o overlay e inicia o scroll
+                    clearInterval(countdownInterval);
+                    countdownOverlay.classList.remove('show');
+                    startActualScroll();
+                }
+            }, 1000); // Atualiza a cada 1 segundo
+        }, 100);
+    });
 }
 
 // Função para iniciar o scroll (chamada após o contador)
@@ -111,17 +125,26 @@ function startScroll() {
 
 // Função para pausar o scroll
 function pauseScroll() {
+    // Limpa qualquer intervalo ativo
     if (scrollInterval) {
         clearInterval(scrollInterval);
         scrollInterval = null;
     }
+    
+    // Atualiza o estado
     isRunning = false;
-    startBtn.disabled = false;
-    pauseBtn.disabled = true;
+    
+    // Atualiza os botões
+    if (startBtn) {
+        startBtn.disabled = false;
+    }
+    if (pauseBtn) {
+        pauseBtn.disabled = true;
+    }
 }
 
 // Função para resetar
-function resetScroll() {
+function resetScroll(keepText = false) {
     pauseScroll();
     scrollPosition = 0;
     countdownOverlay.classList.remove('show');
@@ -131,7 +154,9 @@ function resetScroll() {
             prompterScreen.scrollTop = 0;
         }, 50);
     });
-    prompterContent.textContent = 'Digite ou cole o texto na área acima e clique em "Iniciar" para começar.';
+    if (!keepText) {
+        prompterContent.textContent = 'Digite ou cole o texto na área acima e clique em "Iniciar" para começar.';
+    }
 }
 
 // Função para reiniciar o scroll (quando a velocidade muda)
@@ -191,26 +216,63 @@ textInput.addEventListener('input', () => {
     localStorage.setItem('teleprompterText', textInput.value);
 });
 
+// Função para iniciar automaticamente após entrar em tela cheia
+function startAfterFullscreen() {
+    const text = textInput.value.trim();
+    
+    if (text) {
+        // Para o scroll se estiver rodando
+        if (isRunning) {
+            pauseScroll();
+        }
+        
+        // Reseta o scroll primeiro, mas mantém o texto
+        resetScroll(true);
+        
+        // Aguarda um pouco para garantir que a tela cheia foi aplicada
+        setTimeout(() => {
+            // Inicia o contador regressivo e depois o scroll
+            startCountdown();
+        }, 300);
+    }
+}
+
 // Função para alternar tela cheia
 function toggleFullscreen() {
-    if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.mozFullScreenElement && !document.msFullscreenElement) {
-        // Entrar em tela cheia
+    if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.mozFullScreenElement && !document.msFullscreenElement && !document.body.classList.contains('fullscreen-mode')) {
+        // Entrar em tela cheia - marca para iniciar automaticamente
+        shouldAutoStartOnFullscreen = true;
+        
         if (prompterScreen.requestFullscreen) {
-            prompterScreen.requestFullscreen();
+            prompterScreen.requestFullscreen().catch(() => {
+                // Se falhar, tenta o modo customizado
+                document.body.classList.add('fullscreen-mode');
+                fullscreenIcon.textContent = '⛶';
+                fullscreenText.textContent = 'Sair da Tela Cheia';
+                startAfterFullscreen();
+            });
         } else if (prompterScreen.webkitRequestFullscreen) {
             prompterScreen.webkitRequestFullscreen();
+            startAfterFullscreen();
         } else if (prompterScreen.mozRequestFullScreen) {
             prompterScreen.mozRequestFullScreen();
+            startAfterFullscreen();
         } else if (prompterScreen.msRequestFullscreen) {
             prompterScreen.msRequestFullscreen();
+            startAfterFullscreen();
         } else {
             // Fallback: usar modo tela cheia customizado
             document.body.classList.add('fullscreen-mode');
             fullscreenIcon.textContent = '⛶';
             fullscreenText.textContent = 'Sair da Tela Cheia';
+            startAfterFullscreen();
         }
     } else {
-        // Sair da tela cheia
+        // Sair da tela cheia - para o scroll se estiver rodando
+        if (isRunning) {
+            pauseScroll();
+        }
+        
         if (document.exitFullscreen) {
             document.exitFullscreen();
         } else if (document.webkitExitFullscreen) {
@@ -228,11 +290,66 @@ function toggleFullscreen() {
     }
 }
 
+// Variável para controlar se deve iniciar automaticamente ao entrar em fullscreen
+let shouldAutoStartOnFullscreen = false;
+
 // Atualizar ícone quando entrar/sair do fullscreen
-document.addEventListener('fullscreenchange', updateFullscreenButton);
-document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
-document.addEventListener('mozfullscreenchange', updateFullscreenButton);
-document.addEventListener('MSFullscreenChange', updateFullscreenButton);
+document.addEventListener('fullscreenchange', () => {
+    const isEnteringFullscreen = !!document.fullscreenElement;
+    updateFullscreenButton();
+    
+    if (isEnteringFullscreen && shouldAutoStartOnFullscreen) {
+        shouldAutoStartOnFullscreen = false;
+        startAfterFullscreen();
+    } else if (!isEnteringFullscreen) {
+        // Ao sair do fullscreen, para o scroll
+        if (isRunning) {
+            pauseScroll();
+        }
+    }
+});
+
+document.addEventListener('webkitfullscreenchange', () => {
+    const isEnteringFullscreen = !!document.webkitFullscreenElement;
+    updateFullscreenButton();
+    
+    if (isEnteringFullscreen && shouldAutoStartOnFullscreen) {
+        shouldAutoStartOnFullscreen = false;
+        startAfterFullscreen();
+    } else if (!isEnteringFullscreen) {
+        if (isRunning) {
+            pauseScroll();
+        }
+    }
+});
+
+document.addEventListener('mozfullscreenchange', () => {
+    const isEnteringFullscreen = !!document.mozFullScreenElement;
+    updateFullscreenButton();
+    
+    if (isEnteringFullscreen && shouldAutoStartOnFullscreen) {
+        shouldAutoStartOnFullscreen = false;
+        startAfterFullscreen();
+    } else if (!isEnteringFullscreen) {
+        if (isRunning) {
+            pauseScroll();
+        }
+    }
+});
+
+document.addEventListener('MSFullscreenChange', () => {
+    const isEnteringFullscreen = !!document.msFullscreenElement;
+    updateFullscreenButton();
+    
+    if (isEnteringFullscreen && shouldAutoStartOnFullscreen) {
+        shouldAutoStartOnFullscreen = false;
+        startAfterFullscreen();
+    } else if (!isEnteringFullscreen) {
+        if (isRunning) {
+            pauseScroll();
+        }
+    }
+});
 
 function updateFullscreenButton() {
     const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement || document.body.classList.contains('fullscreen-mode'));
@@ -244,6 +361,10 @@ function updateFullscreenButton() {
         fullscreenIcon.textContent = '⛶';
         fullscreenText.textContent = 'Tela Cheia';
         document.body.classList.remove('fullscreen-mode');
+        // Se saiu do fullscreen e está rodando, para o scroll
+        if (isRunning) {
+            pauseScroll();
+        }
     }
 }
 
